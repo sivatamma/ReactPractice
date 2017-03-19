@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>PS</title>
+    <style type="text/css">
+      .cobrowse-dialog {
+        width: 400px;
+      }
+      .cobrowse-dialog-content{
+        clear: both;
+      }
+      .cobrowse-dialog-title{
+        float: left;
+        margin: 0;
+      }
+      .cobrowse-dialog-close {
+        float: right;
+      }
+      *[privacySettings]{
+        outline: dotted red 1px;
+      }
+    </style>
+    <script type="text/javascript" src="./jquery-2.2.3.js"></script>
+    <script type="text/javascript" src="./underscore.js"></script>
+    <script type="text/javascript" src="./backbone.js"></script>
+    <script type="text/javascript" src="./backbone.localStorage-min.js"></script>
+    <script type="text/javascript" src="./browser.js"></script>
+    <script type="text/javascript" src="./react-with-addons.js"></script>
+    <script type="text/javascript" src="./react-dom.js"></script>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-bootstrap/0.30.5/react-bootstrap.min.js"></script>
+
+    <script type="text/babel" language="JavaScript 1.7">
+    $(function(){
+        ////////////////////////////////////////////////
+        var Modal = ReactBootstrap.Modal;
+        var Table = ReactBootstrap.Table;
+        var PrivacySetting = Backbone.Model.extend({
+          defaults: {
+            "mask": null,
+            "hide": null,
+            "unique": null,
+            "selector": null,
+            "url": null
+          }
+        });
+
+        var PrivacySettingsCollection = Backbone.Collection.extend({
+              // Reference to this collection's model.
+              model: PrivacySetting,
+
+              // Save all of the todo items under this example's namespace.
+              localStorage: new Backbone.LocalStorage('privacy-settings')
+
+        });
+
+
+        class PrivacySettingsController {
+          constructor(bUIOn) {
+            this.uiOn = bUIOn === false ? false : true;
+            this.collection = new PrivacySettingsCollection();
+            this.renderUI.bind(this);
+            this.handleReviewSettings = this.handleReviewSettings.bind(this);
+            var self = this;
+            $('h1').on('click', function(event){
+              event.preventDefault();
+              console.log(event.target.id);
+              self.openSettings(event.target.id);
+            })
+          }
+          toggleUI() {
+            this.uiOn = !this.uiOn;
+          }
+          reviewSettings() {
+            this.renderUI({type:'list'});
+          }
+          openSettings(target) {
+            this.renderUI({id: target});
+          }
+          handleReviewSettings() {
+            alert("reviewSettings----");
+            //this.renderUI();
+            this.renderUI({showLoginDialog: true});
+          }
+          renderUI(options) {
+            let element;
+            if(!this.uiOn) {
+              element = (<div/>);
+            } else if (options.type === 'list'){
+              element = (<ReviewSettingsDialog showModal= {true} collection={this.collection} handleReviewSettings ={this.handleReviewSettings}/>);
+            } else if(options.showLoginDialog){
+              element = (<LoginDialog showModal= {true} collection={this.collection}/>);
+            } else {
+              element = (<PrivacySettingsDialog showModal= {true} elementId={options.id} collection={this.collection}/>);
+            }
+            ReactDOM.render(element,
+              document.getElementById('dialog-container')
+            );
+          }
+        }
+        /* ======================= LoginDialog UI ============================ */
+        class LoginDialog extends React.Component {
+          constructor() {
+            super();
+            this.state = {showModal: true};
+            this.closeDialog = this.closeDialog.bind(this);
+          }
+          componentWillMount() {
+            this.setState(this.state);
+          }
+          closeDialog(bCancel) {
+            this.setState({showModal: false});
+          }
+          componentWillReceiveProps(props){
+            this.setState({showModal: props.showModal})
+          }
+          render() {
+            return (
+              <Modal show={this.state.showModal} onHide={this.closeDialog}>
+                <Modal.Header closeButton>
+                  <Modal.Title>Login Form</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <LoginForm settings={this.props.collection} />
+                </Modal.Body>
+                <Modal.Footer>
+                </Modal.Footer>
+              </Modal>
+            );
+          }
+        }
+
+        var Radio = ReactBootstrap.Radio;
+        var Button = ReactBootstrap.Button;
+        var Form = ReactBootstrap.Form;
+        var Col = ReactBootstrap.Col;
+        var ControlLabel = ReactBootstrap.ControlLabel;
+        var FormGroup = ReactBootstrap.FormGroup;
+        var FormControl = ReactBootstrap.FormControl;
+        class LoginForm extends React.Component {
+          constructor() {
+            super();
+            this.handleChange = this.handleChange.bind(this);
+            this.state = {
+              email: '',
+              password:
+            }
+          }
+
+          handleChange(e) {
+            if(e.target.id === "email") {
+              this.setState({email: e.target.value});
+            }
+            if(e.target.id === "password") {
+              this.setState({password: e.target.value});
+            }
+          }
+          render() {
+            return (
+              <div>
+              <Form horizontal>
+                <FormGroup controlId="formHorizontalEmail">
+                  <Col componentClass={userid} sm={2}>
+                    Email
+                  </Col>
+                  <Col sm={10}>
+                    <FormControl type="email" value={this.state.email} placeholder="Email" id="email" onChange={this.handleChange} />
+                  </Col>
+                </FormGroup>
+
+                <FormGroup controlId="formHorizontalPassword">
+                  <Col componentClass={ControlLabel} sm={2}>
+                    Password
+                  </Col>
+                  <Col sm={10}>
+                    <FormControl type="password" value={this.state.password} placeholder="Password" id="password" onChange={this.handleChange} />
+                  </Col>
+                </FormGroup>
+
+                <FormGroup>
+                  <Col smOffset={2} sm={10}>
+                    <Button type="submit">
+                      Sign in
+                    </Button>
+                  </Col>
+                </FormGroup>
+              </Form>
+              </div>
+            )
+          }
+        }
+        /* ======================= Review UI ============================ */
+        class ReviewSettingsDialog extends React.Component {
+          constructor() {
+            super();
+            this.state = {showModal: true};
+            this.closeDialog = this.closeDialog.bind(this);
+            this.applySettings = this.applySettings.bind(this);
+          }
+          componentWillMount() {
+            this.setState(this.state);
+          }
+          closeDialog(bCancel) {
+            this.setState({showModal: false});
+          }
+          applySettings() {
+            this.setState({isHidden: true});
+            this.props.handleReviewSettings();
+          }
+          componentWillReceiveProps(props){
+            this.setState({showModal: props.showModal})
+          }
+          render() {
+            return (
+              <Modal show={this.state.showModal} onHide={this.closeDialog}>
+                <Modal.Header closeButton>
+                  <Modal.Title>Review Privacy Settings</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <PrivacySettingsList settings={this.props.collection} />
+                </Modal.Body>
+                <Modal.Footer>
+                    <PrivacySettingsDialogFooter submitText='Apply' onClose={this.closeDialog} onSubmit={this.applySettings} />
+                </Modal.Footer>
+              </Modal>
+            );
+          }
+        }
+
+        class PrivacySettingsList extends React.Component {
+          constructor() {
+            super();
+          }
+          render() {
+            var settingsListView = [];
+            this.props.settings.each(function(setting, i){
+              settingsListView.push(<PrivacySettingsListItem index={i} key={i} setting={setting.toJSON()} />);
+            });
+            return (
+              <Table striped>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Selector Name</th>
+                    <th>Type</th>
+                    <th>URL</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {settingsListView}
+                </tbody>
+              </Table>
+            );
+          }
+        }
+
+        class PrivacySettingsListItem extends React.Component {
+          constructor() {
+            super();
+          }
+          render() {
+            return (
+              <tr>
+                <td>{this.props.index+1}</td>
+                <td>{this.props.setting.selector}</td>
+                <td>{this.props.setting.mask ? 'Mask' : 'Hide'}</td>
+                <td>{this.props.setting.url}</td>
+                <td><button type='button'>Preivew</button></td>
+              </tr>
+            )
+          }
+        }
+
+        /* ======================= Settings UI ============================ */
+
+        class PrivacySettingsDialog extends React.Component {
+          constructor(options) {
+            super();
+            let state = PrivacySettingsDialog.defaultProps;
+            state.showModal = true;
+            this.state = state;
+            this.changeSettings = this.changeSettings.bind(this);
+            this.closeDialog = this.closeDialog.bind(this);
+            this.addSettings = this.addSettings.bind(this);
+            this.validateSettings = this.validateSettings.bind(this);
+          }
+          changeSettings(settings) {
+            this.setState(settings);
+          }
+          closeDialog(bCancel) {
+            this.setState({showModal: false});
+          }
+          addSettings() {
+            this.props.collection.add(this.state);
+            $(this.state.selector).attr('privacySettings', JSON.stringify(this.state));
+            this.setState({showModal: false});
+          }
+          validateSettings(settings) {
+          }
+          componentWillReceiveProps(props){
+            let state = PrivacySettingsDialog.defaultProps;
+            let settings = $('#'+props.elementId).attr('privacySettings');
+            if(settings){
+              state = settings = JSON.parse(settings);
+            }
+            state.showModal = props.showModal;
+            this.setState(state);
+          }
+          render() {
+            return (
+              <Modal show={this.state.showModal} onHide={this.closeDialog}>
+                <Modal.Header closeButton>
+                  <Modal.Title>Configure Privacy Settings</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                  <PrivacySettingsDialogBody elementId={this.props.elementId} onChange={this.changeSettings} settings={this.state} />
+                </Modal.Body>
+                <Modal.Footer>
+                  <PrivacySettingsDialogFooter submitText= 'Add' onClose={this.closeDialog} onSubmit={this.addSettings} settings={this.state} />
+                </Modal.Footer>
+              </Modal>
+            );
+          }
+        }
+        PrivacySettingsDialog.defaultProps = {
+          "mask": null,
+          "hide": null,
+          "unique": null,
+          "selector": '',
+          "url": ''
+        }
+        class PrivacySettingsDialogBody extends React.Component {
+          constructor() {
+            super();
+          }
+          render() {
+            return (
+              <div>
+                <PrivacyOptions privacyOptions={this.props.settings} onChange={this.props.onChange} />
+                <PrivacyCriteria elementId={this.props.elementId} privacyCriteria={this.props.settings} onChange={this.props.onChange} />
+                <PrivacyPageOptions privacyPageOptions={this.props.settings} onChange={this.props.onChange} />
+              </div>
+            )
+          }
+        }
+        var Radio = ReactBootstrap.Radio;
+        var Button = ReactBootstrap.Button;
+        var Collapse = ReactBootstrap.Collapse;
+        var FormGroup = ReactBootstrap.FormGroup;
+        var FormControl = ReactBootstrap.FormControl;
+        class PrivacyOptions extends React.Component {
+          constructor() {
+            super();
+            this.handleChange = this.handleChange.bind(this);
+          }
+          handleChange(e) {
+            let state = {mask: e.target.id === 'privacyMaskOption' && e.target.checked, hide:e.target.id === 'privacyHideOption' && e.target.checked};
+            this.props.onChange(state);
+          }
+          render() {
+            let props = this.props.privacyOptions;
+            return (
+              <fieldset>
+                <legend>Privacy options</legend>
+                <FormGroup>
+                  <Radio inline name="privacyOption" checked={props.mask} id="privacyMaskOption" onChange={this.handleChange}>
+                  Mask
+                  </Radio>
+
+                  <Radio inline name="privacyOption" checked={props.hide} id="privacyHideOption" onChange={this.handleChange}>
+                  Hide
+                  </Radio>
+                  </FormGroup>
+              </fieldset>
+            )
+          }
+        }
+        class PrivacyCriteria extends React.Component {
+          constructor() {
+            super();
+            this.state = {openAdvanced:false};
+            this.handleChange = this.handleChange.bind(this);
+            this.toggleAdvanced = this.toggleAdvanced.bind(this);
+          }
+          handleChange(e) {
+            let state;
+            if (e.target.id === 'privacyElementSelectorRadio') {
+              state = {selector: this.props.selector, unique: null};
+            } else if( e.target.id === 'privacyElementSelector') {
+              state = {selector: e.target.value};
+            } else {
+              let selector = this.getSelector(this.props.elementId);
+              state = {unique: e.target.id === 'privacyUniqueElement' && e.target.checked, selector: selector};
+            }
+            this.props.onChange(state);
+          }
+          getSelector(id){
+            return '#'+id;
+          }
+          toggleAdvanced() {
+            this.setState({ openAdvanced: !this.state.openAdvanced });
+          }
+          render() {
+            let props = this.props.privacyCriteria;
+            return (
+              <fieldset>
+                <legend>Privacy Criteria</legend>
+                <FormGroup>
+                  <Radio name="privacyCriteria" checked={props.unique === true} id="privacyUniqueElement" onChange={this.handleChange}>
+                  This element
+                  </Radio>
+
+                  <Radio name="privacyCriteria" checked={props.unique === false} id="privacySimilarElements" onChange={this.handleChange}>
+                  All similar elements
+                  </Radio>
+                </FormGroup>
+                <fieldset>
+                  <legend onClick={this.toggleAdvanced}>Advanced</legend>
+                  <Collapse in={this.state.openAdvanced}>
+                    <FormGroup bsSize="small">
+                      <Radio name="privacyCriteria" checked={props.unique === null} id="privacyElementSelectorRadio" onChange={this.handleChange}>
+                        Selector
+                      </Radio>
+                      <FormControl
+                        type="text" value={props.selector}
+                        disabled={props.unique === true || props.unique === false || props.unique === undefined} id="privacyElementSelector" onChange={this.handleChange}
+                        bsSize="sm"
+                      />
+                      <FormControl.Feedback />
+                    </FormGroup>
+                  </Collapse>
+                  </fieldset>
+              </fieldset>
+            )
+          }
+        }
+        class PrivacyPageOptions extends React.Component {
+          constructor() {
+            super();
+            this.handleChange = this.handleChange.bind(this);
+          }
+          componentWillMount() {
+            this.setState(this.props.privacyPageOptions || this.state);
+          }
+          handleChange(e) {
+            console.log(e.target.ownerDocument.location.href);
+            let state = {url: (e.target.id === 'privacyUrl' && e.target.checked) ? document.location.href : '*'};
+            this.props.onChange(state);
+          }
+          render() {
+            let props = this.props.privacyPageOptions;
+            return (
+              <fieldset>
+                <legend>Privacy settings applies on</legend>
+                <FormGroup>
+                  <Radio name="privacyPageOption" checked={props.url !== '' &&props.url !== '*'} id="privacyUrl" onChange={this.handleChange}>
+                  This Page
+                  </Radio>
+
+                  <Radio name="privacyPageOption" checked={props.url === '*'} id="privacyAllUrls" onChange={this.handleChange}>
+                  All Pages
+                  </Radio>
+                </FormGroup>
+              </fieldset>
+            )
+          }
+        }
+        class PrivacySettingsDialogFooter extends React.Component {
+          constructor() {
+            super();
+          }
+          render() {
+            return (
+              <div>
+              <Button bsSize="small" onClick={this.props.onClose} >Cancel</Button>
+              <Button bsStyle="primary" bsSize="small" onClick={this.props.onSubmit} >{this.props.submitText}</Button>
+              </div>
+            )
+          }
+        }
+
+
+        /* ======================= Widget UI ============================ */
+        class WidgetUI extends React.Component {
+          constructor() {
+            super();
+          }
+          toggleUI(){
+            privacySettingsController.toggleUI();
+          }
+          reviewSettings(){
+            privacySettingsController.reviewSettings();
+          }
+          render() {
+            return (
+              <div>
+                <button onClick={this.toggleUI}>Toggle UI</button>
+                <button onClick={this.reviewSettings}>Review & Save</button>
+              </div>
+            );
+          }
+        }
+
+        ReactDOM.render(
+          <WidgetUI />,
+          document.getElementById('container')
+        );
+        var privacySettingsController = new PrivacySettingsController(true);
+
+        ///////////////////////////////////////////////////////
+    });
+
+    </script>
+
+    <style media="screen" type="text/css">
+    </style>
+  </head>
+  <body>
+    <div id="container">
+        <!-- This element's contents will be replaced with your component. -->
+    </div>
+    <div id="dialog-container">
+        <!-- This element's contents will be replaced with your component. -->
+    </div>
+    <h1 id="header1">header1</h1>
+    <h1 id="header2">header2</h1>
+    <h1 id="header3">header3</h1>
+    <h1 id="header4">header4</h1>
+    <h1 id="header5">header5</h1>
+    <h1 id="header6">header6</h1>
+  </body>
+</html>
